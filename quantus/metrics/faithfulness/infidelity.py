@@ -374,7 +374,7 @@ class BatchInfidelity(Metric[List[float]]):
                 for x_indices in utils.get_block_indices(x_perturbed_pad, patch_size):
                     # Perturb input by block indices of certain patch size
                     x_perturbed_pad = self.perturb_func(
-                        arr=x_perturbed.reshape(batch_size, -1),
+                        arr=x_perturbed_pad.reshape(batch_size, -1),
                         indices=x_indices,
                     )
                     x_perturbed_pad = x_perturbed_pad.reshape(*x_perturbed_pad_shape)

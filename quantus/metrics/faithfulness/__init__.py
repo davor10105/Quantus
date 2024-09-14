@@ -15,7 +15,10 @@ from quantus.metrics.faithfulness.monotonicity_correlation import (
     MonotonicityCorrelation,
 )
 from quantus.metrics.faithfulness.pixel_flipping import PixelFlipping
-from quantus.metrics.faithfulness.region_perturbation import RegionPerturbation
+from quantus.metrics.faithfulness.region_perturbation import (
+    RegionPerturbation,
+    BatchRegionPerturbation,
+)
 from quantus.metrics.faithfulness.road import ROAD, BatchROAD
 from quantus.metrics.faithfulness.selectivity import Selectivity
 from quantus.metrics.faithfulness.sensitivity_n import SensitivityN, BatchSensitivityN
