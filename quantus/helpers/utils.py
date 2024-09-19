@@ -651,7 +651,6 @@ def _pad_array(
             )
         else:
             pad_width_list.append(pad_width[[p for p in padded_axes].index(ax)])
-
     arr_pad = np.pad(arr, pad_width_list, mode=mode)
 
     return arr_pad
@@ -734,8 +733,9 @@ def get_padding_size(dim: int, patch_size: int) -> Tuple[int]:
     modulo = dim % patch_size
     if modulo == 0:
         return (0, 0)
-    half_modulo = modulo / 2
-    return (math.floor(half_modulo), math.ceil(half_modulo))
+    total_padding = patch_size - modulo
+    half_padding = total_padding / 2
+    return (math.floor(half_padding), math.ceil(half_padding))
 
 
 def expand_attribution_channel(a_batch: np.ndarray, x_batch: np.ndarray):
