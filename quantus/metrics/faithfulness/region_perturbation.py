@@ -149,9 +149,7 @@ class BatchRegionPerturbation(Metric[List[float]]):
         self.patch_size = patch_size
         self.order = order.lower()
         self.regions_evaluation = regions_evaluation
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
@@ -282,9 +280,7 @@ class BatchRegionPerturbation(Metric[List[float]]):
     @property
     def get_auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean(
-            [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
-        )
+        return np.mean([utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores])
 
     def evaluate_batch(
         self,
@@ -323,9 +319,7 @@ class BatchRegionPerturbation(Metric[List[float]]):
         batch_size = a_batch.shape[0]
 
         # Predict on input.
-        x_input = model.shape_input(
-            x_batch, x_batch.shape, channel_first=True, batched=True
-        )
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
         y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
 
         patches = []
@@ -333,9 +327,9 @@ class BatchRegionPerturbation(Metric[List[float]]):
 
         # Pad input and attributions. This is needed to allow for any patch_size.
         x_perturbed_h, x_perturbed_w = x_perturbed.shape[-2:]
-        padding_h, padding_w = utils.get_padding_size(
-            x_perturbed_h, self.patch_size
-        ), utils.get_padding_size(x_perturbed_w, self.patch_size)
+        padding_h, padding_w = utils.get_padding_size(x_perturbed_h, self.patch_size), utils.get_padding_size(
+            x_perturbed_w, self.patch_size
+        )
         padding = ((0, 0), (0, 0), padding_h, padding_w)
         x_pad = utils._pad_array(
             x_batch,
@@ -355,9 +349,7 @@ class BatchRegionPerturbation(Metric[List[float]]):
         patches = []
         for block_indices in utils.get_block_indices(x_pad, self.patch_size):
             # Create slice for patch.
-            a_sum = a_pad.reshape(batch_size, -1)[
-                np.arange(batch_size)[:, None], block_indices
-            ].sum(axis=-1)
+            a_sum = a_pad.reshape(batch_size, -1)[np.arange(batch_size)[:, None], block_indices].sum(axis=-1)
 
             # Sum attributions for patch.
             att_sums.append(a_sum)
@@ -367,9 +359,7 @@ class BatchRegionPerturbation(Metric[List[float]]):
 
         if self.order == "random":
             # Order attributions randomly.
-            order = np.array(
-                [np.random.permutation(patches.shape[1]) for _ in range(batch_size)]
-            )
+            order = np.array([np.random.permutation(patches.shape[1]) for _ in range(batch_size)])
 
         elif self.order == "morf":
             # Order attributions according to the most relevant first.
@@ -380,19 +370,10 @@ class BatchRegionPerturbation(Metric[List[float]]):
             order = np.argsort(att_sums, -1)
 
         else:
-            raise ValueError(
-                "Chosen order must be in ['random', 'morf', 'lerf'] but is: {self.order}."
-            )
+            raise ValueError("Chosen order must be in ['random', 'morf', 'lerf'] but is: {self.order}.")
 
         # Create ordered list of patches.
-        ordered_patches = patches[np.arange(batch_size)[:, None], order].transpose(
-            1, 0, 2
-        )
-
-        # Warn
-        # warn.warn_iterations_exceed_patch_number(
-        #     self.regions_evaluation, len(ordered_patches_no_overlap)
-        # )
+        ordered_patches = patches[np.arange(batch_size)[:, None], order].transpose(1, 0, 2)
 
         # Increasingly perturb the input and store the decrease in function value.
         results = []
@@ -403,11 +384,9 @@ class BatchRegionPerturbation(Metric[List[float]]):
             padded_axes=np.arange(len(x_perturbed.shape)),
         )
         x_perturbed_pad_shape = x_perturbed_pad.shape
-        for patch_slice in ordered_patches:
+        for patch_slice in ordered_patches[: self.regions_evaluation]:
             # Perturb.
-            x_perturbed_pad = self.perturb_func(
-                arr=x_perturbed_pad.reshape(batch_size, -1), indices=patch_slice
-            )
+            x_perturbed_pad = self.perturb_func(arr=x_perturbed_pad.reshape(batch_size, -1), indices=patch_slice)
 
             # Remove padding.
             x_perturbed_pad = x_perturbed_pad.reshape(*x_perturbed_pad_shape)
@@ -420,14 +399,10 @@ class BatchRegionPerturbation(Metric[List[float]]):
 
             # Check if the perturbation caused change
             for x_element, x_perturbed_element in zip(x_batch, x_perturbed):
-                warn.warn_perturbation_caused_no_change(
-                    x=x_element, x_perturbed=x_perturbed_element
-                )
+                warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
 
             # Predict on perturbed input x.
-            x_input = model.shape_input(
-                x_perturbed, x_batch.shape, channel_first=True, batched=True
-            )
+            x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
             y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
 
             results.append(y_pred - y_pred_perturb)
@@ -551,9 +526,7 @@ class RegionPerturbation(Metric[List[float]]):
         self.patch_size = patch_size
         self.order = order.lower()
         self.regions_evaluation = regions_evaluation
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         asserts.assert_attributions_order(order=self.order)
@@ -724,9 +697,7 @@ class RegionPerturbation(Metric[List[float]]):
 
         # Create patches across whole input shape and aggregate attributions.
         att_sums = []
-        axis_iterators = [
-            range(pad_width, x_pad.shape[axis] - pad_width) for axis in self.a_axes
-        ]
+        axis_iterators = [range(pad_width, x_pad.shape[axis] - pad_width) for axis in self.a_axes]
         for top_left_coords in itertools.product(*axis_iterators):
             # Create slice for patch.
             patch_slice = utils.create_patch_slice(
@@ -735,9 +706,7 @@ class RegionPerturbation(Metric[List[float]]):
             )
 
             # Sum attributions for patch.
-            att_sums.append(
-                a_pad[utils.expand_indices(a_pad, patch_slice, self.a_axes)].sum()
-            )
+            att_sums.append(a_pad[utils.expand_indices(a_pad, patch_slice, self.a_axes)].sum())
             patches.append(patch_slice)
 
         if self.order == "random":
@@ -754,9 +723,7 @@ class RegionPerturbation(Metric[List[float]]):
             order = np.argsort(att_sums)
 
         else:
-            raise ValueError(
-                "Chosen order must be in ['random', 'morf', 'lerf'] but is: {self.order}."
-            )
+            raise ValueError("Chosen order must be in ['random', 'morf', 'lerf'] but is: {self.order}.")
 
         # Create ordered list of patches.
         ordered_patches = [patches[p] for p in order]
@@ -766,9 +733,7 @@ class RegionPerturbation(Metric[List[float]]):
         ordered_patches_no_overlap = []
         for patch_slice in ordered_patches:
             patch_mask = np.zeros(x_pad.shape, dtype=bool)
-            patch_mask[utils.expand_indices(patch_mask, patch_slice, self.a_axes)] = (
-                True
-            )
+            patch_mask[utils.expand_indices(patch_mask, patch_slice, self.a_axes)] = True
             # patch_mask_exp = utils.expand_indices(patch_mask, patch_slice, self.a_axes)
             # patch_mask[patch_mask_exp] = True
             intersected = blocked_mask & patch_mask
@@ -781,17 +746,13 @@ class RegionPerturbation(Metric[List[float]]):
                 break
 
         # Warn
-        warn.warn_iterations_exceed_patch_number(
-            self.regions_evaluation, len(ordered_patches_no_overlap)
-        )
+        warn.warn_iterations_exceed_patch_number(self.regions_evaluation, len(ordered_patches_no_overlap))
 
         # Increasingly perturb the input and store the decrease in function value.
         results = [None for _ in range(len(ordered_patches_no_overlap))]
         for patch_id, patch_slice in enumerate(ordered_patches_no_overlap):
             # Pad x_perturbed. The mode should probably depend on the used perturb_func?
-            x_perturbed_pad = utils._pad_array(
-                x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
-            )
+            x_perturbed_pad = utils._pad_array(x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes)
 
             # Perturb.
             x_perturbed_pad = self.perturb_func(
@@ -801,9 +762,7 @@ class RegionPerturbation(Metric[List[float]]):
             )
 
             # Remove padding.
-            x_perturbed = utils._unpad_array(
-                x_perturbed_pad, pad_width, padded_axes=self.a_axes
-            )
+            x_perturbed = utils._unpad_array(x_perturbed_pad, pad_width, padded_axes=self.a_axes)
 
             warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_perturbed)
 
@@ -818,9 +777,7 @@ class RegionPerturbation(Metric[List[float]]):
     @property
     def get_auc_score(self):
         """Calculate the area under the curve (AUC) score for several test samples."""
-        return np.mean(
-            [utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores]
-        )
+        return np.mean([utils.calculate_auc(np.array(curve)) for curve in self.evaluation_scores])
 
     def evaluate_batch(
         self,
@@ -852,7 +809,4 @@ class RegionPerturbation(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        return [self.evaluate_instance(model=model, x=x, y=y, a=a) for x, y, a in zip(x_batch, y_batch, a_batch)]
