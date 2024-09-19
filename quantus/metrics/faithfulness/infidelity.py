@@ -158,9 +158,7 @@ class BatchInfidelity(Metric[List[float]]):
         self.perturb_patch_sizes = perturb_patch_sizes
         self.n_perturb_samples = n_perturb_samples
         self.nr_channels = None
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -348,9 +346,7 @@ class BatchInfidelity(Metric[List[float]]):
         n_features = a_batch.shape[-1]
 
         # Predict on input.
-        x_input = model.shape_input(
-            x_batch, x_batch.shape, channel_first=True, batched=True
-        )
+        x_input = model.shape_input(x_batch, x_batch.shape, channel_first=True, batched=True)
         y_pred = model.predict(x_input)[np.arange(batch_size), y_batch]
 
         results = []
@@ -361,9 +357,10 @@ class BatchInfidelity(Metric[List[float]]):
                 a_sums = []
                 x_perturbed = x_batch.copy()
                 x_perturbed_h, x_perturbed_w = x_perturbed.shape[-2:]
-                padding_h, padding_w = utils.get_padding_size(
-                    x_perturbed_h, patch_size
-                ), utils.get_padding_size(x_perturbed_w, patch_size)
+                # Pad the input
+                padding_h, padding_w = utils.get_padding_size(x_perturbed_h, patch_size), utils.get_padding_size(
+                    x_perturbed_w, patch_size
+                )
                 x_perturbed_pad = utils._pad_array(
                     x_perturbed,
                     ((0, 0), (0, 0), padding_h, padding_w),
@@ -387,17 +384,11 @@ class BatchInfidelity(Metric[List[float]]):
 
                     # Check if the perturbation caused change
                     for x_element, x_perturbed_element in zip(x_batch, x_perturbed):
-                        warn.warn_perturbation_caused_no_change(
-                            x=x_element, x_perturbed=x_perturbed_element
-                        )
+                        warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
 
                     # Predict on perturbed input x.
-                    x_input = model.shape_input(
-                        x_perturbed, x_batch.shape, channel_first=True, batched=True
-                    )
-                    y_pred_perturb = model.predict(x_input)[
-                        np.arange(batch_size), y_batch
-                    ]
+                    x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
+                    y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
 
                     x_diff = x_batch - x_perturbed
                     a_diff = a_batch * x_diff.reshape(batch_size, -1)
@@ -408,11 +399,10 @@ class BatchInfidelity(Metric[List[float]]):
                 pred_deltas = np.stack(pred_deltas, axis=1)
                 a_sums = np.stack(a_sums, axis=1)
                 assert callable(self.loss_func)
-                sub_results.append(
-                    self.loss_func(a=pred_deltas, b=a_sums, batched=True)
-                )
+                sub_results.append(self.loss_func(a=pred_deltas, b=a_sums, batched=True))
             results.append(np.mean(np.stack(sub_results, axis=1), axis=-1))
-        return np.mean(np.stack(results, axis=1), axis=-1)
+        results = np.stack(results, axis=1)
+        return np.mean(results, axis=-1)
 
 
 @final
@@ -541,9 +531,7 @@ class Infidelity(Metric[List[float]]):
         self.perturb_patch_sizes = perturb_patch_sizes
         self.n_perturb_samples = n_perturb_samples
         self.nr_channels = None
-        self.perturb_func = make_perturb_func(
-            perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline
-        )
+        self.perturb_func = make_perturb_func(perturb_func, perturb_func_kwargs, perturb_baseline=perturb_baseline)
 
         # Asserts and warnings.
         if not self.disable_warnings:
@@ -706,21 +694,15 @@ class Infidelity(Metric[List[float]]):
             sub_results = []
 
             for patch_size in self.perturb_patch_sizes:
-                pred_deltas = np.zeros(
-                    (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
-                )
-                a_sums = np.zeros(
-                    (int(a.shape[1] / patch_size), int(a.shape[2] / patch_size))
-                )
+                pred_deltas = np.zeros((int(a.shape[1] / patch_size), int(a.shape[2] / patch_size)))
+                a_sums = np.zeros((int(a.shape[1] / patch_size), int(a.shape[2] / patch_size)))
                 x_perturbed = x.copy()
                 pad_width = patch_size - 1
 
                 for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
                     for i_y, top_left_y in enumerate(range(0, x.shape[2], patch_size)):
                         # Perturb input patch-wise.
-                        x_perturbed_pad = utils._pad_array(
-                            x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes
-                        )
+                        x_perturbed_pad = utils._pad_array(x_perturbed, pad_width, mode="edge", padded_axes=self.a_axes)
                         patch_slice = utils.create_patch_slice(
                             patch_size=patch_size,
                             coords=[top_left_x, top_left_y],
@@ -733,31 +715,21 @@ class Infidelity(Metric[List[float]]):
                         )
 
                         # Remove padding.
-                        x_perturbed = utils._unpad_array(
-                            x_perturbed_pad, pad_width, padded_axes=self.a_axes
-                        )
+                        x_perturbed = utils._unpad_array(x_perturbed_pad, pad_width, padded_axes=self.a_axes)
 
                         # Predict on perturbed input x_perturbed.
-                        x_input = model.shape_input(
-                            x_perturbed, x.shape, channel_first=True
-                        )
-                        warn.warn_perturbation_caused_no_change(
-                            x=x, x_perturbed=x_input
-                        )
+                        x_input = model.shape_input(x_perturbed, x.shape, channel_first=True)
+                        warn.warn_perturbation_caused_no_change(x=x, x_perturbed=x_input)
                         y_pred_perturb = float(model.predict(x_input)[:, y])
 
                         x_diff = x - x_perturbed
-                        a_diff = np.dot(
-                            np.repeat(a, repeats=self.nr_channels, axis=0), x_diff
-                        )
+                        a_diff = np.dot(np.repeat(a, repeats=self.nr_channels, axis=0), x_diff)
 
                         pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
                         a_sums[i_x][i_y] = np.sum(a_diff)
 
                 assert callable(self.loss_func)
-                sub_results.append(
-                    self.loss_func(a=pred_deltas.flatten(), b=a_sums.flatten())
-                )
+                sub_results.append(self.loss_func(a=pred_deltas.flatten(), b=a_sums.flatten()))
 
             results.append(np.mean(sub_results))
         return np.mean(results)
@@ -815,7 +787,4 @@ class Infidelity(Metric[List[float]]):
             The evaluation results.
         """
 
-        return [
-            self.evaluate_instance(model=model, x=x, y=y, a=a)
-            for x, y, a in zip(x_batch, y_batch, a_batch)
-        ]
+        return [self.evaluate_instance(model=model, x=x, y=y, a=a) for x, y, a in zip(x_batch, y_batch, a_batch)]
