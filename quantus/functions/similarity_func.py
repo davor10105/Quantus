@@ -12,6 +12,7 @@ from typing import Union
 import numpy as np
 import scipy
 import skimage
+import sys
 
 
 def correlation_spearman(a: np.array, b: np.array, batched: bool = False, **kwargs) -> Union[float, np.array]:
@@ -65,7 +66,10 @@ def correlation_pearson(a: np.array, b: np.array, batched: bool = False, **kwarg
     """
     if batched:
         assert len(a.shape) == 2 and len(b.shape) == 2, "Batched arrays must be 2D"
-        return scipy.stats.pearsonr(a, b, axis=1)[0]
+        # No axis parameter in older versions
+        if sys.version_info >= (3, 10):
+            return scipy.stats.pearsonr(a, b, axis=1)[0]
+        return np.array([scipy.stats.pearsonr(aa, bb)[0] for aa, bb in zip(a, b)])
     return scipy.stats.pearsonr(a, b)[0]
 
 
