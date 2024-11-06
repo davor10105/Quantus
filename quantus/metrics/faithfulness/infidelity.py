@@ -281,13 +281,7 @@ class Infidelity(Metric[List[float]]):
             **kwargs,
         )
 
-    def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
-    ) -> float:
+    def evaluate_instance(self, model: ModelInterface, x: np.ndarray, y: np.ndarray, a: np.ndarray, i) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
 
@@ -323,6 +317,7 @@ class Infidelity(Metric[List[float]]):
                 x_perturbed = x.copy()
                 pad_width = patch_size - 1
 
+                p_i = 0
                 for i_x, top_left_x in enumerate(range(0, x.shape[1], patch_size)):
                     for i_y, top_left_y in enumerate(range(0, x.shape[2], patch_size)):
                         # Perturb input patch-wise.
@@ -349,10 +344,18 @@ class Infidelity(Metric[List[float]]):
                         x_diff = x - x_perturbed
                         a_diff = np.dot(np.repeat(a, repeats=self.nr_channels, axis=0), x_diff)
 
+                        aa_diff = np.dot(a, x_diff)
+
+                        if p_i == 25 and i == 0:
+                            print("xdiff", x_diff.sum(), "adiff", a_diff.sum(), aa_diff.sum(), x_diff.shape, a.shape)
+                        p_i += 1
+
                         pred_deltas[i_x][i_y] = y_pred - y_pred_perturb
                         a_sums[i_x][i_y] = np.sum(a_diff)
 
                 assert callable(self.loss_func)
+                # if i == 0:
+                #    print(pred_deltas.flatten(), a_sums.flatten())
                 sub_results.append(self.loss_func(a=pred_deltas.flatten(), b=a_sums.flatten()))
 
             results.append(np.mean(sub_results))
@@ -412,7 +415,10 @@ class Infidelity(Metric[List[float]]):
             The evaluation results.
         """
 
-        return [self.evaluate_instance(model=model, x=x, y=y, a=a) for x, y, a in zip(x_batch, y_batch, a_batch)]
+        return [
+            self.evaluate_instance(model=model, x=x, y=y, a=a, i=i)
+            for i, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch))
+        ]
 
 
 @final
@@ -751,7 +757,7 @@ class BatchInfidelity(Metric[List[float]]):
                     padded_axes=np.arange(len(x_perturbed.shape)),
                 )
                 x_perturbed_pad_shape = x_perturbed_pad.shape
-                for x_indices in utils.get_block_indices(x_perturbed_pad, patch_size):
+                for p_i, x_indices in enumerate(utils.get_block_indices(x_perturbed_pad, patch_size)):
                     # Perturb input by block indices of certain patch size
                     x_perturbed_pad = self.perturb_func(
                         arr=x_perturbed_pad.reshape(batch_size, -1),
@@ -776,12 +782,16 @@ class BatchInfidelity(Metric[List[float]]):
                     x_diff = x_batch - x_perturbed
                     a_diff = a_batch * x_diff.reshape(batch_size, -1)
 
+                    if p_i == 25:
+                        print("xdiff", x_diff[0].sum(), "adiff", a_diff[0].sum())
+
                     pred_deltas.append(y_pred - y_pred_perturb)
                     a_sums.append(np.sum(a_diff, axis=-1))
 
                 pred_deltas = np.stack(pred_deltas, axis=1)
                 a_sums = np.stack(a_sums, axis=1)
                 assert callable(self.loss_func)
+                # print(pred_deltas[0], a_sums[0])
                 sub_results.append(self.loss_func(a=pred_deltas, b=a_sums, batched=True))
             results.append(np.mean(np.stack(sub_results, axis=1), axis=-1))
         results = np.stack(results, axis=1)

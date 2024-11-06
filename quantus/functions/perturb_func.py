@@ -200,13 +200,13 @@ def baseline_replacement_by_mask(
     # Get the baseline value.
     baseline_value = get_baseline_value(
         value=perturb_baseline,
-        arr=arr,
+        arr=arr_perturbed,
         return_shape=tuple(arr.shape),
         **kwargs,
     )
 
     # Perturb the array.
-    arr_perturbed = np.where(mask, baseline_value, arr_perturbed)
+    arr_perturbed = mask * baseline_value + (1 - mask) * arr_perturbed  # np.where(mask, baseline_value, arr_perturbed)
 
     return arr_perturbed
 

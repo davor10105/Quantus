@@ -255,11 +255,7 @@ class ROAD(Metric[List[float]]):
         )
 
     def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
+        self, model: ModelInterface, x: np.ndarray, y: np.ndarray, a: np.ndarray, i_instance
     ) -> List[float]:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -287,6 +283,9 @@ class ROAD(Metric[List[float]]):
 
         for p_ix, p in enumerate(self.percentages):
             top_k_indices = ordered_indices[: int(self.a_size * p / 100)]
+
+            # if i_instance == 0 and p_ix < 5:
+            #    print(top_k_indices)
 
             x_perturbed = self.perturb_func(  # type: ignore
                 arr=x,
@@ -326,6 +325,8 @@ class ROAD(Metric[List[float]]):
         -------
         None
         """
+        self.evaluation_scores = np.array(self.evaluation_scores).mean(-1)
+        return
 
         # Calculate accuracy for every number of most important pixels removed.
         self.evaluation_scores = {
@@ -363,7 +364,10 @@ class ROAD(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [self.evaluate_instance(model=model, x=x, y=y, a=a) for x, y, a in zip(x_batch, y_batch, a_batch)]
+        return [
+            self.evaluate_instance(model=model, x=x, y=y, a=a, i_instance=i)
+            for i, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch))
+        ]
 
 
 @final
@@ -612,7 +616,8 @@ class BatchROAD(Metric[List[float]]):
         -------
         None
         """
-
+        self.evaluation_scores = self.evaluation_scores[0].mean(-1)
+        return
         # Calculate accuracy for every number of most important pixels removed.
         percentage_scores = self.evaluation_scores[0].mean(axis=0)
         self.evaluation_scores = {
@@ -662,8 +667,11 @@ class BatchROAD(Metric[List[float]]):
         # Get indices of sorted attributions (descending).
         ordered_indices = np.argsort(-a_batch, axis=1)
         results = []
-        for p in self.percentages:
+        for p_ix, p in enumerate(self.percentages):
             top_k_indices = ordered_indices[:, : int(self.a_size * p / 100)]
+
+            # if p_ix < 5:
+            #    print(top_k_indices[0])
 
             x_perturbed = []
             for x_element, top_k_index in zip(x_batch, top_k_indices):

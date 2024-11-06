@@ -258,11 +258,7 @@ class IROF(Metric[List[float]]):
         )
 
     def evaluate_instance(
-        self,
-        model: ModelInterface,
-        x: np.ndarray,
-        y: np.ndarray,
-        a: np.ndarray,
+        self, model: ModelInterface, x: np.ndarray, y: np.ndarray, a: np.ndarray, i_instance
     ) -> float:
         """
         Evaluate instance gets model and data for a single instance as input and returns the evaluation result.
@@ -309,11 +305,15 @@ class IROF(Metric[List[float]]):
             # Perturb input by indices of attributions.
             a_ix = np.nonzero((segments == s_ix).flatten())[0]
 
+            if i_ix < 5 and i_instance == 0:
+                print(len(a_ix))
+
             x_perturbed = self.perturb_func(
                 arr=x_prev_perturbed,
                 indices=a_ix,
                 indexed_axes=self.a_axes,
             )
+
             warn.warn_perturbation_caused_no_change(x=x_prev_perturbed, x_perturbed=x_perturbed)
 
             # Predict on perturbed input x.
@@ -322,6 +322,8 @@ class IROF(Metric[List[float]]):
 
             # Normalise the scores to be within range [0, 1].
             preds.append(float(y_pred_perturb / y_pred))
+            if i_ix < 5 and i_instance == 0:
+                print(y_pred_perturb / y_pred)
             x_prev_perturbed = x_perturbed
 
         # Calculate the area over the curve (AOC) score.
@@ -393,7 +395,10 @@ class IROF(Metric[List[float]]):
         scores_batch:
             The evaluation results.
         """
-        return [self.evaluate_instance(model=model, x=x, y=y, a=a) for x, y, a in zip(x_batch, y_batch, a_batch)]
+        return [
+            self.evaluate_instance(model=model, x=x, y=y, a=a, i_instance=i)
+            for i, (x, y, a) in enumerate(zip(x_batch, y_batch, a_batch))
+        ]
 
 
 @final
@@ -732,24 +737,30 @@ class BatchIROF(Metric[List[float]]):
 
         preds = []
         x_perturbed = x_batch.copy()
-        for s_indices_segment in s_indices_batch.T:
+        for i_ix, s_indices_segment in enumerate(s_indices_batch.T):
             # Perturb input by indices of attributions.
             mask = (segments_batch == s_indices_segment[:, None, None])[:, None]
+
+            if i_ix < 5:
+                print(mask.reshape(batch_size, -1).sum(-1)[0])
 
             x_new_perturbed = self.perturb_func(
                 arr=x_perturbed,
                 mask=mask,
             )
+
             # Check if the perturbation caused change
             for x_element, x_perturbed_element in zip(x_new_perturbed, x_perturbed):
                 warn.warn_perturbation_caused_no_change(x=x_element, x_perturbed=x_perturbed_element)
 
             # Predict on perturbed input x.
             x_input = model.shape_input(x_new_perturbed, x_new_perturbed.shape, channel_first=True, batched=True)
-            y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
+            y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch].astype(np.float32)
 
             # Normalise the scores to be within range [0, 1].
-            preds.append(y_pred_perturb / y_pred)
+            preds.append((y_pred_perturb / y_pred).astype(np.float32))
+            if i_ix < 5:
+                print((y_pred_perturb / y_pred)[0])
             x_perturbed = x_new_perturbed
         preds = np.stack(preds, axis=1) * mask_preds_batch
         # Calculate the area over the curve (AOC) score.
