@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 import sys
 
 from quantus.functions.normalise_func import normalise_by_average_second_moment_estimate
-from quantus.functions.perturb_func import batch_uniform_noise, uniform_noise
+from quantus.functions.perturb_func import batch_uniform_noise, uniform_noise, perturb_batch
 from quantus.helpers.enums import (
     DataType,
     EvaluationCategory,
