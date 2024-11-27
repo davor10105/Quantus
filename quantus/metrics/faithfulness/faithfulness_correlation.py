@@ -725,6 +725,6 @@ class BatchFaithfulnessCorrelation(Metric[List[float]]):
         pred_deltas = np.stack(pred_deltas, axis=1)
         att_sums = np.stack(att_sums, axis=1)
 
-        similarity = self.similarity_func(a=att_sums, b=pred_deltas, batched=True)
+        similarity: np.array = self.similarity_func(a=att_sums, b=pred_deltas, batched=True)
 
         return similarity.tolist()

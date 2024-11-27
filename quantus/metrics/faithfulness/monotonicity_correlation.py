@@ -764,4 +764,5 @@ class BatchMonotonicityCorrelation(Metric[List[float]]):
         vars = np.stack(vars, axis=1)
         atts = np.stack(atts, axis=1)
 
-        return self.similarity_func(a=atts, b=vars, batched=True).tolist()
+        similarities: np.array = self.similarity_func(a=atts, b=vars, batched=True)
+        return similarities.tolist()

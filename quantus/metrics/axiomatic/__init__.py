@@ -6,4 +6,4 @@
 
 from quantus.metrics.axiomatic.completeness import Completeness
 from quantus.metrics.axiomatic.input_invariance import InputInvariance
-from quantus.metrics.axiomatic.non_sensitivity import NonSensitivity
+from quantus.metrics.axiomatic.non_sensitivity import NonSensitivity, BatchNonSensitivity

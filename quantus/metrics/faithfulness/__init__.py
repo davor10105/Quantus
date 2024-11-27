@@ -6,11 +6,9 @@
 
 from quantus.metrics.faithfulness.faithfulness_correlation import (
     FaithfulnessCorrelation,
-    BatchFaithfulnessCorrelation,
 )
 from quantus.metrics.faithfulness.faithfulness_estimate import (
     FaithfulnessEstimate,
-    BatchFaithfulnessEstimate,
 )
 from quantus.metrics.faithfulness.infidelity import Infidelity, BatchInfidelity
 from quantus.metrics.faithfulness.irof import IROF, BatchIROF

@@ -697,9 +697,8 @@ class BatchPixelFlipping(Metric[Union[float, List[float]]]):
             x_input = model.shape_input(x_perturbed, x_batch.shape, channel_first=True, batched=True)
             y_pred_perturb = model.predict(x_input)[np.arange(batch_size), y_batch]
             preds.append(y_pred_perturb)
-        preds = np.stack(preds, axis=1)
 
         if self.return_auc_per_sample:
-            return utils.calculate_auc(preds, batched=True).tolist()
+            return utils.calculate_auc(np.stack(preds, axis=1), batched=True).tolist()
 
-        return preds.tolist()
+        return np.stack(preds, axis=1).tolist()
