@@ -104,13 +104,10 @@ METRIC_PAIRS = {
         "batched": quantus.BatchNonSensitivity(),
         "unbatched": quantus.NonSensitivity(),
     },
-    "random_logit": {
-        "batched": quantus.BatchRandomLogit(),
-        "unbatched": quantus.RandomLogit(),
+    "completeness": {
+        "batched": quantus.BatchCompleteness(),
+        "unbatched": quantus.Completeness(),
     },
-}
-
-METRIC_PAIRS = {
     "random_logit": {
         "batched": quantus.BatchRandomLogit(num_classes=10),
         "unbatched": quantus.RandomLogit(num_classes=10),
